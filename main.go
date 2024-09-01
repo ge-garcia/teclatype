@@ -18,7 +18,8 @@ type model struct {
 }
 
 func (m *model) Start() {
-	if !m.typing { // start timer if we weren't already typing
+	if !m.typing { // restart if not already typing
+		m.typed = ""
 		m.start = time.Now()
 	}
 
@@ -75,21 +76,21 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m model) View() string {
-	s := "Tecla\n\n"
+	s := "Tecla\ntype this sentence:\n\n"
 
 	if m.success {
 		s += fmt.Sprintf("success! finished in %v seconds!\n", m.lastDuration)
 	} else {
 		s += fmt.Sprintf("%s\n%s\n", m.text, m.typed)
-
-		if m.typing {
-			s += "typing!\n"
-		} else {
-			s += "paused\n"
-		}
 	}
 
-	s += "\nesc to quit"
+	if m.typing {
+		s += "\nesc to stop"
+		s += "\tenter to restart"
+	} else {
+		s += "\nesc to quit"
+	}
+
 	return s
 }
 
