@@ -8,6 +8,18 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 )
 
+const (
+	colorReset  = "\033[0m"
+	colorRed    = "\033[31m"
+	colorGreen  = "\033[32m"
+	colorYellow = "\033[33m"
+)
+
+type stats struct {
+	wpm int
+	cpm int
+}
+
 type model struct {
 	start        time.Time
 	text         string
@@ -15,6 +27,7 @@ type model struct {
 	lastDuration time.Duration
 	typing       bool
 	success      bool
+	statistics   stats
 }
 
 func (m *model) Start() {
@@ -30,9 +43,16 @@ func (m *model) Stop() {
 	m.typing = false
 }
 
+func (m *model) CalculateStats() {
+	durationInMinutes := m.lastDuration.Minutes()
+	m.statistics.cpm = int(float64(len(m.typed)) / durationInMinutes)
+	m.statistics.wpm = int(float64(len(m.typed)) / 5 / durationInMinutes)
+}
+
 func (m *model) Finish() {
 	m.lastDuration = time.Since(m.start)
 	m.success = true
+	m.CalculateStats()
 	m.Stop()
 }
 
@@ -75,13 +95,28 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
+func colorText(text, color string) string {
+	return fmt.Sprintf("%s%s%s", color, text, colorReset)
+}
+
 func (m model) View() string {
 	s := "Tecla\ntype this sentence:\n\n"
 
 	if m.success {
 		s += fmt.Sprintf("success! finished in %v seconds!\n", m.lastDuration)
+		s += fmt.Sprintf("WPM: %d CPM: %d\n", m.statistics.wpm, m.statistics.cpm)
 	} else {
-		s += fmt.Sprintf("%s\n%s\n", m.text, m.typed)
+		for i, c := range m.text {
+			if i < len(m.typed) {
+				if m.typed[i] == byte(c) {
+					s += colorText(string(c), colorGreen)
+				} else {
+					s += colorText(string(c), colorRed)
+				}
+			} else {
+				s += string(c)
+			}
+		}
 	}
 
 	if m.typing {
