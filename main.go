@@ -13,6 +13,7 @@ const (
 	colorRed    = "\033[31m"
 	colorGreen  = "\033[32m"
 	colorYellow = "\033[33m"
+	colorBgRed  = "\033[41m"
 )
 
 type stats struct {
@@ -111,7 +112,11 @@ func (m model) View() string {
 				if m.typed[i] == byte(c) {
 					s += colorText(string(c), colorGreen)
 				} else {
-					s += colorText(string(c), colorRed)
+					if string(c) != " " {
+						s += colorText(string(c), colorRed)
+					} else {
+						s += colorText(" ", colorBgRed)
+					}
 				}
 			} else {
 				s += string(c)
