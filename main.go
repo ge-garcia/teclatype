@@ -69,22 +69,22 @@ func (m model) Init() tea.Cmd {
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
-		switch msg.String() {
-		case "ctrl+c", "esc": // leave typing mode or quit if out
+		switch msg.Type {
+		case tea.KeyCtrlC, tea.KeyEsc: // leave typing mode or quit if out
 			if m.typing {
 				m.Stop()
 			} else {
 				return m, tea.Quit
 			}
-		case "backspace":
+		case tea.KeyBackspace:
 			if m.typing && len(m.typed) > 0 {
 				m.typed = m.typed[:len(m.typed)-1]
 			}
-		case "enter": // restart
+		case tea.KeyEnter:
 			m = initialModel()
 		default:
 			m.Start()
-			m.typed += msg.String()
+			m.typed += string(msg.Runes)
 
 			if m.typed == m.text {
 				m.Finish()
