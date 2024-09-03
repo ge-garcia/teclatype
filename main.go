@@ -90,16 +90,16 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			case ViewTitle:
 				// begin new test
 				m.state = ViewTest
-				m.start = time.Now()
+				m.start = time.Time{}
 				m.typed = ""
 			case ViewTest:
 				// restart test
 				m.typed = ""
-				m.start = time.Now()
+				m.start = time.Time{}
 			case ViewResults:
 				// begin a new test
 				m.state = ViewTest
-				m.start = time.Now()
+				m.start = time.Time{}
 				m.typed = ""
 			}
 		default:
@@ -110,6 +110,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				if m.ShouldEndTest() {
 					m.CalculateStats()
 					m.state = ViewResults
+				}
+				if m.start == (time.Time{}) {
+					m.start = time.Now()
 				}
 			}
 		}
