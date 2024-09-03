@@ -132,7 +132,10 @@ func (m model) ShouldEndTest() bool {
 	textWords := strings.Fields(m.text)
 	typedWords := strings.Fields(m.typed)
 	lastTextWord := textWords[len(textWords)-1]
-	lastTypedWord := typedWords[len(typedWords)-1]
+	lastTypedWord := ""
+	if len(typedWords) > 0 {
+		lastTypedWord = typedWords[len(typedWords)-1]
+	}
 
 	// all words typed
 	if len(typedWords) == len(textWords) {
