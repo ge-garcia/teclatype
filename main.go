@@ -11,11 +11,15 @@ import (
 )
 
 const (
-	colorText       = lipgloss.Color("#F4E6D2")
-	colorIncorrect  = lipgloss.Color("#CA3F3F")
-	colorCorrect    = lipgloss.Color("#989F56")
-	colorBackground = lipgloss.Color("#181515")
-	colorContainer  = lipgloss.Color("#221E1E")
+	colorText        = lipgloss.Color("#636363")
+	colorIncorrect   = lipgloss.Color("#CA3F3F")
+	colorCorrect     = lipgloss.Color("#FFFFFF")
+	colorBackground  = lipgloss.Color("#181515")
+	colorContainer   = lipgloss.Color("#221E1E")
+	colorCurrentWord = lipgloss.Color("#a8a8a8")
+	colorNextWord    = lipgloss.Color("#808080")
+	colorHighlight   = lipgloss.Color("#d4d4d4")
+	colorBgHighlight = lipgloss.Color("#5e5e5e")
 )
 
 type ViewState int
@@ -100,7 +104,9 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 		default:
 			if m.state == ViewTest {
-				m.typed += string(msg.Runes)
+				if len(m.typed) < len(m.text) {
+					m.typed += string(msg.Runes)
+				}
 				if m.ShouldEndTest() {
 					m.CalculateStats()
 					m.state = ViewResults
@@ -204,17 +210,41 @@ func (m model) TitleView() string {
 }
 
 func (m model) TestView() string {
+	currWord := true
+	nextWord := false
 	var styledText string
 	for i, c := range m.text {
+		charStyle := lipgloss.NewStyle().Foreground(colorText)
 		if i < len(m.typed) {
 			if m.typed[i] == byte(c) {
-				styledText += lipgloss.NewStyle().Foreground(colorCorrect).Render(string(c))
+				charStyle = lipgloss.NewStyle().Foreground(colorCorrect) // correct letter
 			} else {
-				styledText += lipgloss.NewStyle().Foreground(colorIncorrect).Render(string(c))
+				charStyle = lipgloss.NewStyle().Foreground(colorIncorrect) // incorrect letter
+				if byte(c) == ' ' {
+					charStyle = lipgloss.NewStyle().Background(colorIncorrect)
+				}
 			}
+		} else if i == len(m.typed) {
+			charStyle = lipgloss.NewStyle().Foreground(colorHighlight).Background(colorBgHighlight) // current letter user is on
 		} else {
-			styledText += lipgloss.NewStyle().Foreground(colorText).Render(string(c))
+			if currWord {
+				if m.text[i-1] != ' ' {
+					charStyle = lipgloss.NewStyle().Foreground(colorCurrentWord)
+				} else {
+					currWord = false
+					nextWord = true
+					i++
+				}
+			}
+			if nextWord {
+				if m.text[i] != ' ' {
+					charStyle = lipgloss.NewStyle().Foreground(colorNextWord)
+				} else {
+					nextWord = false
+				}
+			}
 		}
+		styledText += charStyle.Render(string(c))
 	}
 
 	cmds := []keybind{
