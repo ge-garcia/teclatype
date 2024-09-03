@@ -26,6 +26,10 @@ const (
 	ViewResults
 )
 
+const (
+	statusBarHeight = 1
+)
+
 type stats struct {
 	wpm int
 	cpm int
@@ -41,6 +45,11 @@ type model struct {
 	width        int
 	height       int
 	state        ViewState
+}
+
+type keybind struct {
+	key string
+	cmd string
 }
 
 func initialModel() model {
@@ -116,35 +125,42 @@ func (m *model) CalculateStats() {
 func (m model) ShouldEndTest() bool {
 	textWords := strings.Fields(m.text)
 	typedWords := strings.Fields(m.typed)
-
-	// if typed more words end test
-	if len(typedWords) > len(textWords) {
-		return true
-	}
+	lastTextWord := textWords[len(textWords)-1]
+	lastTypedWord := typedWords[len(typedWords)-1]
 
 	// all words typed
 	if len(typedWords) == len(textWords) {
-
-		// last word is correct
-		if len(typedWords) == len(textWords) && typedWords[len(typedWords)-1] == textWords[len(textWords)-1] {
+		// last word is correct or space after incorrectLastWord
+		if lastTypedWord == lastTextWord {
 			return true
 		}
 		// space after incorrect last word
-		if len(typedWords) == len(textWords) && strings.HasSuffix(m.typed, " ") {
+		if strings.HasSuffix(m.typed, " ") {
 			return true
-		}
-
-		// five additional characters typed after
-		if len(typedWords) == len(textWords) {
-			lastWordStart := strings.LastIndex(m.typed, typedWords[len(typedWords)-1])
-			charsAfterLastWord := len(m.typed) - lastWordStart - len(typedWords[len(typedWords)-1])
-			if charsAfterLastWord >= 5 {
-				return true
-			}
 		}
 	}
 
 	return false
+}
+
+func renderFooter(cmds []keybind, width int) string {
+	var footerContent string
+	for i, cmd := range cmds {
+		key := lipgloss.NewStyle().Render(cmd.key)
+		command := lipgloss.NewStyle().Render(cmd.cmd)
+		footerContent += fmt.Sprintf("%s %s", key, command)
+		if i < len(cmds)-1 {
+			footerContent += " - "
+		}
+	}
+
+	return lipgloss.NewStyle().
+		Background(colorContainer).
+		Foreground(colorText).
+		Height(statusBarHeight).
+		Width(width).
+		Padding(0, 2).
+		Render(footerContent)
 }
 
 func (m model) View() string {
@@ -170,16 +186,21 @@ func (m model) TitleView() string {
 \__/  \___/ \___/  /_/   \__,_/  \__/   \__, /   / .___/ \___/
                                        /____/   /_/
 `
+	cmds := []keybind{
+		{key: "Enter", cmd: "begin test"},
+	}
+
 	title := lipgloss.NewStyle().Foreground(colorText).Render(header)
-	prompt := lipgloss.NewStyle().Foreground(colorText).Render("Press ENTER to begin the test")
-	content := lipgloss.JoinVertical(lipgloss.Center, title, prompt)
+	footer := renderFooter(cmds, m.width)
+	container := lipgloss.NewStyle().Background(colorBackground).Height(m.height-statusBarHeight).Width(m.width).Align(lipgloss.Center, lipgloss.Center).Render(title)
+	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	// return the view with full window size, background color, and centered
 	return lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
 		Background(colorBackground).
-		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
+		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, view))
 }
 
 func (m model) TestView() string {
@@ -196,31 +217,48 @@ func (m model) TestView() string {
 		}
 	}
 
-	footer := lipgloss.NewStyle().
-		Foreground(colorText).Background(colorContainer).Render("ESC to stop | ENTER to Restart")
-
-	content := lipgloss.JoinVertical(lipgloss.Center, styledText, footer)
+	cmds := []keybind{
+		{key: "Escape", cmd: "stop"},
+		{key: "Enter", cmd: "restart"},
+		{key: "Control+C", cmd: "quit"},
+	}
+	container := lipgloss.NewStyle().Background(colorBackground).Height(m.height-statusBarHeight).Width(m.width).Align(lipgloss.Center, lipgloss.Center).Render(styledText)
+	footer := renderFooter(cmds, m.width)
+	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	// return the view with full window size, background color, and centered
 	return lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
 		Background(colorBackground).
-		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
+		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, view))
 }
 
 func (m model) ResultsView() string {
 	successStyle := lipgloss.NewStyle().Foreground(colorCorrect).Render(fmt.Sprintf("Test completed in %.2f seconds!", m.lastDuration.Seconds()))
 	statsStyle := lipgloss.NewStyle().Foreground(colorCorrect).Render(fmt.Sprintf("WPM: %d | CPM: %d", m.statistics.wpm, m.statistics.cpm))
-	prompt := lipgloss.NewStyle().Foreground(colorText).Render("Press ENTER to start a new test.")
+	statsContent := lipgloss.JoinVertical(lipgloss.Center, successStyle, statsStyle)
+	statsContainer := lipgloss.NewStyle().
+		Background(colorBackground).
+		Padding(2, 4).
+		Align(lipgloss.Center).
+		Render(statsContent)
 
-	content := lipgloss.JoinVertical(lipgloss.Center, successStyle, statsStyle, prompt)
+	container := lipgloss.NewStyle().Background(colorBackground).Height(m.height-statusBarHeight).Width(m.width).Align(lipgloss.Center, lipgloss.Center).Render(statsContainer)
+
+	cmds := []keybind{
+		{key: "Enter", cmd: "start"},
+		{key: "Control+C", cmd: "quit"},
+	}
+
+	footer := renderFooter(cmds, m.width)
+	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	return lipgloss.NewStyle().
 		Width(m.width).
 		Height(m.height).
 		Background(colorBackground).
-		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, content))
+		Render(lipgloss.Place(m.width, m.height, lipgloss.Center, lipgloss.Center, view))
 }
 
 func main() {
