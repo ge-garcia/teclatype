@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
+	"math/rand"
 	"os"
 	"strings"
 	"time"
@@ -49,6 +51,8 @@ type model struct {
 	width        int
 	height       int
 	state        ViewState
+	words        []string
+	testLength   int
 }
 
 type keybind struct {
@@ -56,15 +60,63 @@ type keybind struct {
 	cmd string
 }
 
-func initialModel() model {
-	return model{
-		state: ViewTitle,
-		text:  "Sphinx of black quartz, judge my vow.",
+func readWords(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		return nil, err
 	}
+
+	defer file.Close()
+
+	var words []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		words = append(words, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return words, nil
+}
+
+func initialModel() model {
+	words, err := readWords("common-words-en.list")
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+	return model{
+		state:      ViewTitle,
+		words:      words,
+		testLength: 20,
+	}
+}
+
+func (m *model) generateTest() {
+	selectedWords := make([]string, m.testLength)
+	for i := range selectedWords {
+		selectedWords[i] = m.words[rand.Intn(len(m.words))]
+	}
+	m.text = strings.Join(selectedWords, " ")
 }
 
 func (m model) Init() tea.Cmd {
 	return nil
+}
+
+func (m *model) restartTest() {
+	m.typed = ""
+	m.start = time.Time{}
+}
+
+func (m *model) newTest() {
+	m.generateTest()
+	m.state = ViewTest
+	m.start = time.Time{}
+	m.typed = ""
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
@@ -88,19 +140,11 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEnter:
 			switch m.state {
 			case ViewTitle:
-				// begin new test
-				m.state = ViewTest
-				m.start = time.Time{}
-				m.typed = ""
+				m.newTest()
 			case ViewTest:
-				// restart test
-				m.typed = ""
-				m.start = time.Time{}
+				m.restartTest()
 			case ViewResults:
-				// begin a new test
-				m.state = ViewTest
-				m.start = time.Time{}
-				m.typed = ""
+				m.newTest()
 			}
 		default:
 			if m.state == ViewTest {
@@ -176,7 +220,6 @@ func renderFooter(cmds []keybind, width int) string {
 }
 
 func (m model) View() string {
-	// prompt := lipgloss.NewStyle().Foreground(colorTestBlank).Background(colorBackground).Render("Type this sentence:")
 	switch m.state {
 	case ViewTitle:
 		return m.TitleView()
