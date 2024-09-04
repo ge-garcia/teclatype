@@ -63,7 +63,7 @@ type keybind struct {
 func readWords(filename string) ([]string, error) {
 	file, err := os.Open(filename)
 	if err != nil {
-		fmt.Printf("Error:", err)
+		fmt.Printf("Error: %v", err)
 		return nil, err
 	}
 
@@ -83,9 +83,9 @@ func readWords(filename string) ([]string, error) {
 }
 
 func initialModel() model {
-	words, err := readWords("common-words.txt")
+	words, err := readWords("common-words-en.list")
 	if err != nil {
-		fmt.Printf("Error:", err)
+		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 	return model{
@@ -220,7 +220,6 @@ func renderFooter(cmds []keybind, width int) string {
 }
 
 func (m model) View() string {
-	// prompt := lipgloss.NewStyle().Foreground(colorTestBlank).Background(colorBackground).Render("Type this sentence:")
 	switch m.state {
 	case ViewTitle:
 		return m.TitleView()
