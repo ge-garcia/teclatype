@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"math/rand"
 	"os"
@@ -41,16 +42,6 @@ func NewTestView(width int, height int) *TestView {
 	tv.GenerateTest()
 
 	return &tv
-}
-
-func (tv *TestView) GenerateTest() {
-	selectedWords := make([]string, tv.testLength)
-
-	for i := range selectedWords {
-		selectedWords[i] = tv.words[rand.Intn(len(tv.words))]
-	}
-
-	tv.text = strings.Join(selectedWords, " ")
 }
 
 func (tv TestView) Init() tea.Cmd {
@@ -170,4 +161,36 @@ func (tv TestView) ShouldEndTest() bool {
 	}
 
 	return false
+}
+
+func (tv *TestView) GenerateTest() {
+	selectedWords := make([]string, tv.testLength)
+
+	for i := range selectedWords {
+		selectedWords[i] = tv.words[rand.Intn(len(tv.words))]
+	}
+
+	tv.text = strings.Join(selectedWords, " ")
+}
+
+func readWords(filename string) ([]string, error) {
+	file, err := os.Open(filename)
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		return nil, err
+	}
+
+	defer file.Close()
+
+	var words []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		words = append(words, scanner.Text())
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, err
+	}
+
+	return words, nil
 }

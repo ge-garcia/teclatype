@@ -82,6 +82,3 @@ func (rv ResultsView) View() string {
 		Background(colorBackground).
 		Render(lipgloss.Place(rv.width, rv.height, lipgloss.Center, lipgloss.Center, view))
 }
-
-func (rv ResultsView) CalculateStats() {
-}

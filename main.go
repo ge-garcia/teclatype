@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
 	"os"
 
@@ -21,8 +20,6 @@ const (
 	colorBgHighlight = lipgloss.Color("#5e5e5e")
 )
 
-type ViewState int
-
 const (
 	statusBarHeight = 1
 )
@@ -37,28 +34,6 @@ type model struct {
 type keybind struct {
 	key string
 	cmd string
-}
-
-func readWords(filename string) ([]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return nil, err
-	}
-
-	defer file.Close()
-
-	var words []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		words = append(words, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return words, nil
 }
 
 func initialModel() model {
