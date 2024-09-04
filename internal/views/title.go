@@ -1,4 +1,4 @@
-package main
+package views
 
 import (
 	tea "github.com/charmbracelet/bubbletea"
@@ -51,15 +51,15 @@ func (tv TitleView) View() string {
 		{key: "Enter", cmd: "begin test"},
 	}
 
-	title := lipgloss.NewStyle().Foreground(colorText).Render(header)
+	title := lipgloss.NewStyle().Foreground(ColorText).Render(header)
 	footer := renderFooter(cmds, tv.width)
-	container := lipgloss.NewStyle().Background(colorBackground).Height(tv.height-statusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(title)
+	container := lipgloss.NewStyle().Background(ColorBackground).Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(title)
 	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	// return the view with full window size, background color, and centered
 	return lipgloss.NewStyle().
 		Width(tv.width).
 		Height(tv.height).
-		Background(colorBackground).
+		Background(ColorBackground).
 		Render(lipgloss.Place(tv.width, tv.height, lipgloss.Center, lipgloss.Center, view))
 }

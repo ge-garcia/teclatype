@@ -1,4 +1,4 @@
-package main
+package views
 
 import (
 	"fmt"
@@ -57,16 +57,16 @@ func (rv ResultsView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (rv ResultsView) View() string {
-	successStyle := lipgloss.NewStyle().Foreground(colorCorrect).Render(fmt.Sprintf("Test completed in %.2f seconds!", rv.duration.Seconds()))
-	statsStyle := lipgloss.NewStyle().Foreground(colorCorrect).Render(fmt.Sprintf("WPM: %d | CPM: %d", rv.statistics.wpm, rv.statistics.cpm))
+	successStyle := lipgloss.NewStyle().Foreground(ColorCorrect).Render(fmt.Sprintf("Test completed in %.2f seconds!", rv.duration.Seconds()))
+	statsStyle := lipgloss.NewStyle().Foreground(ColorCorrect).Render(fmt.Sprintf("WPM: %d | CPM: %d", rv.statistics.wpm, rv.statistics.cpm))
 	statsContent := lipgloss.JoinVertical(lipgloss.Center, successStyle, statsStyle)
 	statsContainer := lipgloss.NewStyle().
-		Background(colorBackground).
+		Background(ColorBackground).
 		Padding(2, 4).
 		Align(lipgloss.Center).
 		Render(statsContent)
 
-	container := lipgloss.NewStyle().Background(colorBackground).Height(rv.height-statusBarHeight).Width(rv.width).Align(lipgloss.Center, lipgloss.Center).Render(statsContainer)
+	container := lipgloss.NewStyle().Background(ColorBackground).Height(rv.height-StatusBarHeight).Width(rv.width).Align(lipgloss.Center, lipgloss.Center).Render(statsContainer)
 
 	cmds := []keybind{
 		{key: "Enter", cmd: "start"},
@@ -79,6 +79,6 @@ func (rv ResultsView) View() string {
 	return lipgloss.NewStyle().
 		Width(rv.width).
 		Height(rv.height).
-		Background(colorBackground).
+		Background(ColorBackground).
 		Render(lipgloss.Place(rv.width, rv.height, lipgloss.Center, lipgloss.Center, view))
 }
