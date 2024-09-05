@@ -87,24 +87,34 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (tv TestView) View() string {
 	currWord := true
 	nextWord := false
+
+	styleDefault := lipgloss.NewStyle().Foreground(ColorText).Background(ColorBackground)
+	styleCorrect := styleDefault.Foreground(ColorCorrect)
+	styleIncorrect := styleDefault.Foreground(ColorIncorrect)
+	styleIncorrectBlank := styleDefault.Background(ColorIncorrect)
+
+	styleCursor := lipgloss.NewStyle().Foreground(ColorHighlight).Background(ColorBgHighlight)
+	styleWord := styleDefault.Foreground(ColorCurrentWord)
+	styleAhead := styleDefault.Foreground(ColorNextWord)
+
 	var styledText string
 	for i, c := range tv.text {
-		charStyle := lipgloss.NewStyle().Foreground(ColorText)
+		charStyle := styleDefault
 		if i < len(tv.typed) {
 			if tv.typed[i] == byte(c) {
-				charStyle = lipgloss.NewStyle().Foreground(ColorCorrect) // correct letter
+				charStyle = styleCorrect
 			} else {
-				charStyle = lipgloss.NewStyle().Foreground(ColorIncorrect) // incorrect letter
+				charStyle = styleIncorrect
 				if byte(c) == ' ' {
-					charStyle = lipgloss.NewStyle().Background(ColorIncorrect)
+					charStyle = styleIncorrectBlank
 				}
 			}
 		} else if i == len(tv.typed) {
-			charStyle = lipgloss.NewStyle().Foreground(ColorHighlight).Background(ColorBgHighlight) // current letter user is on
+			charStyle = styleCursor
 		} else {
 			if currWord {
 				if tv.text[i-1] != ' ' {
-					charStyle = lipgloss.NewStyle().Foreground(ColorCurrentWord)
+					charStyle = styleWord
 				} else {
 					currWord = false
 					nextWord = true
@@ -113,7 +123,7 @@ func (tv TestView) View() string {
 			}
 			if nextWord {
 				if tv.text[i] != ' ' {
-					charStyle = lipgloss.NewStyle().Foreground(ColorNextWord)
+					charStyle = styleAhead
 				} else {
 					nextWord = false
 				}
@@ -127,15 +137,14 @@ func (tv TestView) View() string {
 		{key: "Enter", cmd: "restart"},
 		{key: "Control+C", cmd: "quit"},
 	}
-	container := lipgloss.NewStyle().Background(ColorBackground).Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(styledText)
+	container := styleDefault.Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(styledText)
 	footer := renderFooter(cmds, tv.width)
 	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	// return the view with full window size, background color, and centered
-	return lipgloss.NewStyle().
+	return styleDefault.
 		Width(tv.width).
 		Height(tv.height).
-		Background(ColorBackground).
 		Render(lipgloss.Place(tv.width, tv.height, lipgloss.Center, lipgloss.Center, view))
 }
 
