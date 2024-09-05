@@ -57,11 +57,22 @@ func (rv ResultsView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (rv ResultsView) View() string {
-	successStyle := lipgloss.NewStyle().Foreground(ColorCorrect).Render(fmt.Sprintf("Test completed in %.2f seconds!", rv.duration.Seconds()))
-	statsStyle := lipgloss.NewStyle().Foreground(ColorCorrect).Render(fmt.Sprintf("WPM: %d | CPM: %d", rv.statistics.wpm, rv.statistics.cpm))
-	statsContent := lipgloss.JoinVertical(lipgloss.Center, successStyle, statsStyle)
-	statsContainer := lipgloss.NewStyle().
-		Background(ColorBackground).
+	successStyle := lipgloss.NewStyle().Foreground(ColorCorrect).Background(ColorBackground)
+
+	successText := successStyle.Render(fmt.Sprintf("Test completed in %.2f seconds!", rv.duration.Seconds()))
+	wpmCpmText := successStyle.Foreground(ColorCorrect).Render(fmt.Sprintf("WPM: %d | CPM: %d", rv.statistics.wpm, rv.statistics.cpm))
+
+	statsContent := lipgloss.JoinVertical(
+		lipgloss.Left,
+		successText,
+		lipgloss.PlaceHorizontal( // workaround for https://github.com/charmbracelet/lipgloss/issues/209
+			lipgloss.Width(successText),
+			lipgloss.Center,
+			wpmCpmText,
+			lipgloss.WithWhitespaceBackground(ColorBackground),
+		),
+	)
+	statsContainer := successStyle.
 		Padding(2, 4).
 		Align(lipgloss.Center).
 		Render(statsContent)

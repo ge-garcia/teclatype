@@ -51,9 +51,12 @@ func (tv TitleView) View() string {
 		{key: "Enter", cmd: "begin test"},
 	}
 
-	title := lipgloss.NewStyle().Foreground(ColorText).Render(header)
+	style := lipgloss.NewStyle().Foreground(ColorText).Background(ColorBackground)
+
+	title := style.Render(header)
 	footer := renderFooter(cmds, tv.width)
-	container := lipgloss.NewStyle().Background(ColorBackground).Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(title)
+	container := style.Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(title)
+
 	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
 
 	// return the view with full window size, background color, and centered
