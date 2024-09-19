@@ -1,43 +1,30 @@
 package views
 
 import (
-	"bufio"
 	"fmt"
-	"math/rand"
 	"os"
 	"strings"
 	"time"
 
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/ge-garcia/tecla/internal/source"
 )
 
 type TestView struct {
-	start time.Time
-	text  string
-	typed string
-
-	// TODO: abstract into some TestSource interface which generates text, to
-	// differentiate between random words vs specific text (Rust enums pls)
-	words      []string // words to be randomized
-	testLength int
-
+	start  time.Time
+	text   string
+	typed  string
+	source source.TestSource
 	width  int
 	height int
 }
 
 func NewTestView(width int, height int) *TestView {
-	words, err := readWords("common-words-en.list")
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
-
 	tv := TestView{
-		words:      words,
-		testLength: 20,
-		width:      width,
-		height:     height,
+		source: source.NewWordsSource("common-words-en.list", 20),
+		width:  width,
+		height: height,
 	}
 	tv.GenerateTest()
 
@@ -173,33 +160,5 @@ func (tv TestView) ShouldEndTest() bool {
 }
 
 func (tv *TestView) GenerateTest() {
-	selectedWords := make([]string, tv.testLength)
-
-	for i := range selectedWords {
-		selectedWords[i] = tv.words[rand.Intn(len(tv.words))]
-	}
-
-	tv.text = strings.Join(selectedWords, " ")
-}
-
-func readWords(filename string) ([]string, error) {
-	file, err := os.Open(filename)
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		return nil, err
-	}
-
-	defer file.Close()
-
-	var words []string
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		words = append(words, scanner.Text())
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return words, nil
+	tv.text = tv.source.Generate()
 }
