@@ -10,24 +10,24 @@ import (
 
 type WordsSource struct {
 	words []string
-	count uint
+	Count uint
 }
 
-func NewWordsSource(filename string, count uint) WordsSource {
+func NewWordsSource(filename string, count uint) *WordsSource {
 	words, err := readWords(filename)
 	if err != nil {
 		fmt.Printf("Error: %v", err)
 		os.Exit(1)
 	}
 
-	return WordsSource{
+	return &WordsSource{
 		words: words,
-		count: count,
+		Count: count,
 	}
 }
 
 func (ws WordsSource) Generate() string {
-	selectedWords := make([]string, ws.count)
+	selectedWords := make([]string, ws.Count)
 
 	for i := range selectedWords {
 		selectedWords[i] = ws.words[rand.Intn(len(ws.words))]

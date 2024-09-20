@@ -44,11 +44,19 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return NewTitleView(tv.width, tv.height), nil
 		case tea.KeyEnter:
 			tv.GenerateTest()
-			tv.start = time.Time{}
-			tv.typed = ""
 		case tea.KeyBackspace:
 			if len(tv.typed) > 0 {
 				tv.typed = tv.typed[:len(tv.typed)-1]
+			}
+		case tea.KeyCtrlW:
+			if ws, ok := tv.source.(*source.WordsSource); ok {
+				ws.Count *= 2
+
+				if ws.Count > 80 {
+					ws.Count = 10
+				}
+
+				tv.GenerateTest()
 			}
 		default:
 			if tv.start.IsZero() {
@@ -124,6 +132,10 @@ func (tv TestView) View() string {
 		{key: "Enter", cmd: "restart"},
 		{key: "Control+C", cmd: "quit"},
 	}
+	if ws, ok := tv.source.(*source.WordsSource); ok {
+		cmds = append(cmds, keybind{key: "Control+W", cmd: fmt.Sprintf("word count (%d)", ws.Count)})
+	}
+
 	container := styleDefault.Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(styledText)
 	footer := renderFooter(cmds, tv.width)
 	view := lipgloss.JoinVertical(lipgloss.Center, container, footer)
@@ -161,4 +173,6 @@ func (tv TestView) ShouldEndTest() bool {
 
 func (tv *TestView) GenerateTest() {
 	tv.text = tv.source.Generate()
+	tv.start = time.Time{}
+	tv.typed = ""
 }
