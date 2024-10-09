@@ -2,29 +2,29 @@ package views
 
 import (
 	"fmt"
-	"os"
 	"strings"
-	"time"
 
+	"github.com/charmbracelet/bubbles/stopwatch"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/ge-garcia/tecla/internal/source"
 )
 
 type TestView struct {
-	start  time.Time
-	text   string
-	typed  string
-	source source.TestSource
-	width  int
-	height int
+	text      string
+	typed     string
+	source    source.TestSource
+	stopwatch stopwatch.Model
+	width     int
+	height    int
 }
 
 func NewTestView(width int, height int) *TestView {
 	tv := TestView{
-		source: source.NewWordsSource("common-words-en.list", 20),
-		width:  width,
-		height: height,
+		source:    source.NewWordsSource("common-words-en.list", 20),
+		stopwatch: stopwatch.New(),
+		width:     width,
+		height:    height,
 	}
 	tv.GenerateTest()
 
@@ -36,7 +36,6 @@ func (tv TestView) Init() tea.Cmd {
 }
 
 func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
-	os.WriteFile("/tmp/log", []byte(fmt.Sprintf("%v", tv)), 0644)
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.Type {
@@ -59,16 +58,17 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				tv.GenerateTest()
 			}
 		default:
-			if tv.start.IsZero() {
-				tv.start = time.Now()
-			}
-
 			if len(tv.typed) < len(tv.text) {
 				tv.typed += string(msg.Runes)
 			}
 
 			if tv.ShouldEndTest() {
-				return NewResultsView(tv.width, tv.height, time.Since(tv.start), len(tv.typed)), nil
+				rv := NewResultsView(tv.width, tv.height, tv.stopwatch.Elapsed(), len(tv.typed))
+				return rv, tv.stopwatch.Stop()
+			}
+
+			if !tv.stopwatch.Running() {
+				return tv, tv.stopwatch.Start()
 			}
 		}
 	case tea.WindowSizeMsg:
@@ -76,7 +76,10 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		tv.height = msg.Height
 	}
 
-	return tv, nil
+	// update stopwatch otherwise
+	var cmd tea.Cmd
+	tv.stopwatch, cmd = tv.stopwatch.Update(msg)
+	return tv, cmd
 }
 
 func (tv TestView) View() string {
@@ -173,6 +176,6 @@ func (tv TestView) ShouldEndTest() bool {
 
 func (tv *TestView) GenerateTest() {
 	tv.text = tv.source.Generate()
-	tv.start = time.Time{}
+	tv.stopwatch.Reset()
 	tv.typed = ""
 }
