@@ -20,13 +20,14 @@ type TestView struct {
 }
 
 func NewTestView(width int, height int) *TestView {
+	source := source.NewWordsSource("common-words-en.list", 20)
 	tv := TestView{
-		source:    source.NewWordsSource("common-words-en.list", 20),
+		text:      source.Generate(),
+		source:    source,
 		stopwatch: stopwatch.New(),
 		width:     width,
 		height:    height,
 	}
-	tv.GenerateTest()
 
 	return &tv
 }
@@ -42,12 +43,16 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case tea.KeyEsc:
 			return NewTitleView(tv.width, tv.height), nil
 		case tea.KeyEnter:
-			tv.GenerateTest()
+			return tv.GenerateTest()
 		case tea.KeyBackspace:
 			if len(tv.typed) > 0 {
 				tv.typed = tv.typed[:len(tv.typed)-1]
 			}
 		case tea.KeyCtrlW:
+			if tv.stopwatch.Running() {
+				break
+			}
+
 			if ws, ok := tv.source.(*source.WordsSource); ok {
 				ws.Count *= 2
 
@@ -55,7 +60,7 @@ func (tv TestView) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					ws.Count = 10
 				}
 
-				tv.GenerateTest()
+				return tv.GenerateTest()
 			}
 		default:
 			if len(tv.typed) < len(tv.text) {
@@ -135,8 +140,12 @@ func (tv TestView) View() string {
 		{key: "Enter", cmd: "restart"},
 		{key: "Control+C", cmd: "quit"},
 	}
-	if ws, ok := tv.source.(*source.WordsSource); ok {
-		cmds = append(cmds, keybind{key: "Control+W", cmd: fmt.Sprintf("word count (%d)", ws.Count)})
+
+	// commands only available while not in a test
+	if !tv.stopwatch.Running() {
+		if ws, ok := tv.source.(*source.WordsSource); ok {
+			cmds = append(cmds, keybind{key: "Control+W", cmd: fmt.Sprintf("word count (%d)", ws.Count)})
+		}
 	}
 
 	container := styleDefault.Height(tv.height-StatusBarHeight).Width(tv.width).Align(lipgloss.Center, lipgloss.Center).Render(styledText)
@@ -174,8 +183,10 @@ func (tv TestView) ShouldEndTest() bool {
 	return false
 }
 
-func (tv *TestView) GenerateTest() {
+func (tv TestView) GenerateTest() (TestView, tea.Cmd) {
 	tv.text = tv.source.Generate()
-	tv.stopwatch.Reset()
 	tv.typed = ""
+
+	cmds := tea.Batch(tv.stopwatch.Stop(), tv.stopwatch.Reset())
+	return tv, cmds
 }
